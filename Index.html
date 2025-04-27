@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contabilidad de Contribuyentes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>Gestión de Contribuyentes</h1>
+
+  <!-- Sección de Usuarios -->
+  <section id="usuarios">
+    <h2>Registrar Usuario</h2>
+    <form id="formRegistroUsuario">
+      <input type="text" id="nombre" placeholder="Nombre" required>
+      <input type="text" id="apellido" placeholder="Apellido" required>
+      <input type="text" id="cedula" placeholder="Cédula" required>
+      <select id="regularidad">
+        <option value="Regular">Regular</option>
+        <option value="No Regular">No Regular</option>
+      </select>
+      <button type="submit">Guardar Usuario</button>
+    </form>
+
+    <h2>Modificar Usuario</h2>
+    <form id="formModificarUsuario">
+      <select id="selectUsuarioModificar"></select>
+      <input type="text" id="nombreModificar" placeholder="Nombre">
+      <input type="text" id="apellidoModificar" placeholder="Apellido">
+      <input type="text" id="cedulaModificar" placeholder="Cédula">
+      <select id="regularidadModificar">
+        <option value="Regular">Regular</option>
+        <option value="No Regular">No Regular</option>
+      </select>
+      <button type="submit">Guardar Cambios</button>
+    </form>
+  </section>
+
+  <!-- Sección de Contribuciones -->
+  <section id="contribuciones">
+    <h2>Registrar Contribución</h2>
+    <form id="formRegistroContribucion">
+      <select id="selectUsuarioContribucion" required></select>
+      <select id="semanaContribucion" required></select>
+      <input type="number" id="montoBs" placeholder="Monto en Bs" step="0.01" required>
+      <input type="number" id="tasaDia" placeholder="Tasa del día (BCV)" step="0.0001" required>
+      <input type="text" id="referenciaPago" placeholder="Referencia de Pago" required>
+      <p id="resultadoUnidadesCredito"><strong>Unidades de Crédito:</strong> 0</p>
+      <button type="submit">Emitir Factura</button>
+    </form>
+
+    <div id="facturaEmitida" style="display:none;">
+      <h3>Factura</h3>
+      <p id="detalleFactura"></p>
+      <button id="botonCompartir">Compartir Factura</button>
+    </div>
+  </section>
+  
+  <section id="banco">
+  <h2>Banco - Movimientos</h2>
+
+  <div style="text-align: right; margin-bottom: 10px;">
+    <button id="btnExportarPDF">Exportar Movimientos a PDF</button>
+  </div>
+    <div id="saldoDisponible" style="font-size: 24px; font-weight: bold; margin-bottom: 15px;">
+  Saldo Disponible: Bs 0.00
+</div>
+
+  <div id="listaMovimientos">
+    <!-- Aquí se cargan los movimientos -->
+  </div>
+
+  <h2>Registrar Egreso</h2>
+  <form id="formRegistrarEgreso">
+    <input type="text" id="nombreCuentaEgreso" placeholder="Nombre de la Cuenta" required>
+    <input type="number" id="montoEgreso" placeholder="Monto Bs" step="0.01" required>
+    <input type="text" id="referenciaEgreso" placeholder="Referencia" required>
+    <input type="number" id="tasaEgreso" placeholder="Tasa del Día (BCV)" step="0.0001" required>
+    <textarea id="notaEgreso" placeholder="Nota del Egreso" required></textarea>
+    <button type="submit">Emitir y Registrar Factura</button>
+  </form>
+</section>
+  <section id="unidadesCredito">
+  <h2>Unidades de Crédito por Usuario</h2>
+
+  <div style="text-align: right; margin-bottom: 10px;">
+    <button id="btnGuardarUnidadesCredito">Guardar Modificaciones</button>
+  </div>
+
+  <div id="tablaUnidadesCredito">
+    <!-- Tabla generada dinámicamente -->
+  </div>
+</section>
+  <section id="ajustes">
+  <h2>Configuraciones y Ajustes</h2>
+
+  <h3>Mensaje de Agradecimiento</h3>
+  <form id="formMensajeAgradecimiento">
+    <input type="text" id="inputMensajeAgradecimiento" placeholder="Escribe tu mensaje de agradecimiento" required>
+    <button type="submit">Guardar Mensaje</button>
+  </form>
+
+  <h3>Exportar Datos</h3>
+  <button id="btnExportarJSON">Exportar Base de Datos (JSON)</button>
+
+  <h3>Reiniciar Sistema</h3>
+  <button id="btnReiniciarDatos" style="background-color: red; color: white;">¡Reiniciar Todo!</button>
+</section>
+
+  <script src="script.js"></script>
+</body>
+</html>
