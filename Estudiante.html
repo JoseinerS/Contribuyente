@@ -1,1 +1,191 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación Docente - Estudiante</title>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 p-4">
+  <main class="max-w-3xl mx-auto">
+    <!-- Login -->
+    <section id="loginSection" class="bg-white p-4 rounded-xl shadow mb-6">
+      <h2 class="text-xl font-semibold mb-2">🔐 Ingresar con tu ID</h2>
+      <input id="inputID" type="text" placeholder="Tu ID de estudiante" class="border p-2 w-full">
+      <button id="btnLogin" class="bg-blue-600 text-white px-4 py-2 mt-3 rounded w-full">Ingresar</button>
+    </section><!-- Progreso -->
+<section id="progresoSection" class="hidden bg-white p-4 rounded-xl shadow mb-6">
+  <h2 class="text-xl font-semibold mb-2">📈 Progreso de Evaluación</h2>
+  <div class="w-full bg-gray-200 rounded-full h-4">
+    <div id="barraProgreso" class="bg-green-500 h-4 rounded-full text-right text-xs px-2 text-white" style="width: 0%">0%</div>
+  </div>
+</section>
 
+<!-- Panel de módulos -->
+<section id="modulosSection" class="hidden bg-white p-4 rounded-xl shadow">
+  <h2 class="text-xl font-semibold mb-4">🧩 Módulos de Evaluación</h2>
+  <div id="listaModulos" class="space-y-2"></div>
+</section>
+
+<!-- Confirmación final -->
+<section id="finalSection" class="hidden bg-green-100 border border-green-400 p-4 rounded-xl mt-4 text-center">
+  <h2 class="text-2xl font-bold text-green-800">✅ ¡Evaluación Completada!</h2>
+  <p id="confirmacionID" class="text-green-700 mt-2"></p>
+</section>
+
+  </main>  <!-- Modal -->  <div id="modalPregunta" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-md p-6">
+      <h3 class="text-lg font-semibold mb-2" id="modalTitulo"></h3>
+      <p class="mb-4 text-sm" id="modalPreguntaTexto"></p>
+      <input id="modalValor" type="number" inputmode="numeric" min="1" max="10" step="0.1" class="border p-2 rounded w-full mb-4">
+      <div class="flex justify-end space-x-2">
+        <button id="modalCancelar" class="bg-gray-400 text-white px-4 py-2 rounded">Cancelar</button>
+        <button id="modalAceptar" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
+      </div>
+    </div>
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA8mmiUYt_gRgRwwSoM1MzavUOUv70591w",
+      authDomain: "minimarketdass.firebaseapp.com",
+      databaseURL: "https://minimarketdass-default-rtdb.firebaseio.com",
+      projectId: "minimarketdass",
+      storageBucket: "minimarketdass.firebasestorage.app",
+      messagingSenderId: "228045407429",
+      appId: "1:228045407429:web:91cf076ce2a5fa9e909cac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let estudianteID = null;
+    let asignaturas = [];
+    let preguntas = {};
+    let progresoGuardado = {};
+    let respuestasParciales = {};
+    let currentModulo = null;
+    let currentAsignatura = null;
+    let currentPreguntas = null;
+    let preguntaKeys = [];
+    let preguntaIndex = 0;
+
+    const inputID = document.getElementById("inputID");
+    const btnLogin = document.getElementById("btnLogin");
+    const progresoSection = document.getElementById("progresoSection");
+    const barraProgreso = document.getElementById("barraProgreso");
+    const listaModulos = document.getElementById("listaModulos");
+    const modulosSection = document.getElementById("modulosSection");
+    const finalSection = document.getElementById("finalSection");
+    const confirmacionID = document.getElementById("confirmacionID");
+
+    const modal = document.getElementById("modalPregunta");
+    const modalTitulo = document.getElementById("modalTitulo");
+    const modalPreguntaTexto = document.getElementById("modalPreguntaTexto");
+    const modalValor = document.getElementById("modalValor");
+    const modalAceptar = document.getElementById("modalAceptar");
+    const modalCancelar = document.getElementById("modalCancelar");
+
+    btnLogin.addEventListener("click", async () => {
+      estudianteID = inputID.value.trim();
+      if (!estudianteID) return alert("Escribe tu ID");
+
+      const estSnap = await get(ref(db, `estudiantes/${estudianteID}`));
+      if (!estSnap.exists()) return alert("ID no encontrado");
+      asignaturas = estSnap.val().asignaturas_habilitadas;
+
+      const pregSnap = await get(ref(db, `preguntas`));
+      preguntas = pregSnap.val();
+
+      const progSnap = await get(ref(db, `progreso/${estudianteID}`));
+      progresoGuardado = progSnap.exists() ? progSnap.val() : {};
+
+      document.getElementById("loginSection").classList.add("hidden");
+      progresoSection.classList.remove("hidden");
+      modulosSection.classList.remove("hidden");
+      generarModulos();
+      actualizarProgreso();
+    });
+
+    function generarModulos() {
+      listaModulos.innerHTML = "";
+      Object.entries(preguntas).forEach(([modulo, preguntasObj]) => {
+        const btn = document.createElement("button");
+        btn.className = "w-full bg-purple-600 text-white p-3 rounded hover:bg-purple-700";
+        btn.textContent = `📋 ${modulo.toUpperCase()}`;
+        btn.onclick = () => iniciarEvaluacion(modulo, preguntasObj);
+        listaModulos.appendChild(btn);
+      });
+    }
+
+    async function iniciarEvaluacion(modulo, preguntasObj) {
+      currentModulo = modulo;
+      currentPreguntas = preguntasObj;
+      preguntaKeys = Object.keys(preguntasObj);
+
+      for (const asignatura of asignaturas) {
+        if (progresoGuardado[modulo]?.includes(asignatura)) continue;
+        currentAsignatura = asignatura;
+        respuestasParciales = {};
+        preguntaIndex = 0;
+        await mostrarSiguientePregunta();
+        return;
+      }
+    }
+
+    async function mostrarSiguientePregunta() {
+      if (preguntaIndex >= preguntaKeys.length) {
+        await set(ref(db, `respuestas/${currentAsignatura}/${estudianteID}/${currentModulo}`), respuestasParciales);
+        if (!progresoGuardado[currentModulo]) progresoGuardado[currentModulo] = [];
+        progresoGuardado[currentModulo].push(currentAsignatura);
+        await set(ref(db, `progreso/${estudianteID}`), progresoGuardado);
+        actualizarProgreso();
+        iniciarEvaluacion(currentModulo, currentPreguntas);
+        return;
+      }
+
+      const clave = preguntaKeys[preguntaIndex];
+      const texto = currentPreguntas[clave];
+      const profSnap = await get(ref(db, `asignaturas/${currentAsignatura}`));
+      const profesor = profSnap.exists() ? profSnap.val().profesor : "Profesor desconocido";
+
+      modalTitulo.textContent = `${currentModulo.toUpperCase()} - ${currentAsignatura} (${profesor})`;
+      modalPreguntaTexto.textContent = texto;
+      modalValor.value = "";
+      modal.classList.remove("hidden");
+    }
+
+    modalAceptar.onclick = () => {
+      const valor = parseFloat(modalValor.value);
+      if (isNaN(valor) || valor < 1 || valor > 10) return alert("Ingresa un valor entre 1 y 10");
+
+      const clave = preguntaKeys[preguntaIndex];
+      respuestasParciales[clave] = valor;
+      preguntaIndex++;
+      modal.classList.add("hidden");
+      setTimeout(mostrarSiguientePregunta, 300);
+    };
+
+    modalCancelar.onclick = () => {
+      modal.classList.add("hidden");
+    };
+
+    function actualizarProgreso() {
+      let total = 0;
+      let completado = 0;
+      Object.values(preguntas).forEach(() => total += asignaturas.length);
+      Object.values(progresoGuardado).forEach(arr => completado += arr.length);
+      const porcentaje = Math.round((completado / total) * 100);
+      barraProgreso.style.width = `${porcentaje}%`;
+      barraProgreso.textContent = `${porcentaje}%`;
+
+      if (porcentaje === 100) {
+        modulosSection.classList.add("hidden");
+        finalSection.classList.remove("hidden");
+        confirmacionID.textContent = `El estudiante con ID ${estudianteID} ha completado la evaluación docente.`;
+      }
+    }
+  </script></body>
+</html>
